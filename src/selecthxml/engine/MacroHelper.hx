@@ -14,6 +14,7 @@ import tink.macro.tools.FunctionTools;
 import tink.core.types.Outcome;
 
 using tink.macro.tools.ExprTools;
+using tink.macro.tools.MetadataTools;
 using tink.macro.tools.TypeTools;
 using tink.core.types.Outcome;
 #end
@@ -211,28 +212,44 @@ class MacroHelper
 		var args = getMetaArgs(n.meta, 'value');
 		if (args.length > 0)
 			name = args[0];
-			
-		var ret = "__x_m_l__.get('" +name + "')";
-		
+					
+		var value = "__x_m_l__.get('" +name + "')";
+				
 		switch(n.type)
 		{
 			case TInst(t, p):
 				switch(t.toString())
 				{
 					case "Int":
-						return "Std.parseInt(" + ret + ")";
+						value = "Std.parseInt(" + value + ")";
 					case "Float":
-						return "Std.parseFloat(" + ret + ")";
+						value = "Std.parseFloat(" + value + ")";
 				}
 			case TEnum(t, p):
 				switch(t.toString())
 				{
 					case "Bool":
-						return ret + "== 'true' || " +ret+ " == '1'";
+						value = value + "== 'true' || " +value + " == '1'";
 				}
 			default:
 		}
-		return ret;
+		
+		if (n.meta.has("process"))
+		{
+			var pp = n.meta.get().getValues("process")[0];
+			if (pp.length > 0)
+			{
+				switch(pp[0].getString())
+				{
+					case Success(s):
+						value = StringTools.replace(s, "$value", "(" +value + ")");
+						trace(value);
+					case Failure(_):
+				}
+			}
+		}
+		
+		return value;
 	}
 	
 	static function getMetaArgs(metadata:MetaAccess, name:String)
@@ -240,19 +257,16 @@ class MacroHelper
 		if (!metadata.has(name)) return [];
 		
 		var ret = [];
-		for (meta in metadata.get())
+		for (val in metadata.get().getValues(name))
 		{
-			if (meta.name == name)
+			for (arg in val)
 			{
-				for (param in meta.params)
+				switch(arg.getName())
 				{
-					switch(param.getName())
-					{
-						case Success(s):
-							ret.push(s);
-						default:
-					}
-				}
+					case Success(s):
+						ret.push(s);
+					default:
+				}				
 			}
 		}
 		return ret;
