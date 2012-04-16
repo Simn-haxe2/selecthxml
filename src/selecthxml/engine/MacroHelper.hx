@@ -103,12 +103,14 @@ class MacroHelper
 				for (field in ano.get().fields)
 				{
 					var args = getMetaArgs(field.meta, 'pseudo');
-					if (args.length == 3 && last.tag.toLowerCase() == args[0].toLowerCase())
+					if (args.length >= 2 && last.tag.toLowerCase() == args[0].toLowerCase())
 					{
 						for (i in last.attrs)
 						{
 							if (i.name.toLowerCase() != args[1].toLowerCase())
 								continue;
+							if (args.length == 2)
+								return Success(makeXmlTypeReturn(pt.pack, pt.name, field, p));
 							switch(i.operator)
 							{
 								case Exactly:
@@ -116,6 +118,7 @@ class MacroHelper
 										return Success(makeXmlTypeReturn(pt.pack, pt.name, field, p));
 								default:
 							}
+							
 						}
 					}
 					var name = field.name;
