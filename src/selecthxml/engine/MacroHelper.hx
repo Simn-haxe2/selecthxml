@@ -224,6 +224,12 @@ class MacroHelper
 					case "Float":
 						return "Std.parseFloat(" + ret + ")";
 				}
+			case TEnum(t, p):
+				switch(t.toString())
+				{
+					case "Bool":
+						return ret + "== 'true' || " +ret+ " == '1'";
+				}
 			default:
 		}
 		return ret;
