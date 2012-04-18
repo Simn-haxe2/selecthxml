@@ -208,16 +208,32 @@ class TypeResolver
 				}
 			default:
 		}
-		
-		// TODO: process...
-		
-		return value;
+
+		return applyProcess(field, value, 0);
 	}
 	
 	static function makeSetter(field:ClassField)
 	{
-		return ["__x_m_l__".resolve().field("set").call([field.name.toExpr(), ["Std", "string"].drill().call(["value".resolve()])]),
+		var value = applyProcess(field, "value".resolve(), 1);
+		value = ["Std", "string"].drill().call([value]);
+		return ["__x_m_l__".resolve().field("set").call([field.name.toExpr(), value]),
 			field.name.resolve()].toBlock();
+	}
+	
+	static function applyProcess(field:ClassField, value:Expr, procIndex:Int)
+	{
+		if (!field.meta.has("process")) return value;
+		
+		var by = { };
+		Reflect.setField(by, "$value", value);
+		
+		var procMeta = field.meta.get().getValues("process");
+		for (pm in procMeta)
+		{
+			if (pm.length <= procIndex) continue;
+			value = pm[procIndex].substitute(by);
+		}
+		return value;
 	}
 	
 	static function makeField(name:String, kind:FieldType, pos, ?access)
