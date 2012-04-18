@@ -21,3 +21,34 @@ build_base.hxml
 --next
 build_base.hxml
 -cpp bin/cpp
+
+--next
+build_base.hxml
+-D SELECTHXML_RUNTIME_PARSING
+-neko bin/neko_runtime.n
+
+--next
+build_base.hxml
+-D SELECTHXML_RUNTIME_PARSING
+-swf bin/swf9_runtime.swf
+
+--next
+build_base.hxml
+-D SELECTHXML_RUNTIME_PARSING
+-swf-version 8
+-swf bin/swf8_runtime.swf
+
+--next
+build_base.hxml
+-D SELECTHXML_RUNTIME_PARSING
+-php bin/php_runtime
+
+--next
+build_base.hxml
+-D SELECTHXML_RUNTIME_PARSING
+-js bin/js_runtime.js
+
+--next
+build_base.hxml
+-D SELECTHXML_RUNTIME_PARSING
+-cpp bin/cpp_runtime

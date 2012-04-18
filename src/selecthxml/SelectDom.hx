@@ -6,7 +6,6 @@ import haxe.macro.Context;
 import haxe.macro.Expr;
 
 import selecthxml.engine.Lexer;
-import selecthxml.engine.Parser;
 import selecthxml.engine.TypeResolver;
 
 import tink.core.types.Option;
@@ -14,8 +13,10 @@ using tink.macro.tools.MacroTools;
 
 #end
 
+import selecthxml.engine.Parser;
+
 class SelectDom 
-{
+{	
 	@:macro static public function select<T>(xml:ExprOf<TypedXml<T>>, selectionString:String)
 	{
 		if (selectionString == null || selectionString.length == 0)
@@ -29,7 +30,12 @@ class SelectDom
 		for (s in selector)
 			selectorExprs.push(s.toExpr());
 			
-		var ret = ["selecthxml", "SelectDom", "runtimeSelect"].drill(xml.pos).call([xml, selectorExprs.toArray()], xml.pos);
+		#if SELECTHXML_RUNTIME_PARSING
+		var ret = ["selecthxml", "SelectDom", "runtimeSelect"].drill(xml.pos).call([xml, selectionString.toExpr()], xml.pos);
+		#else
+		var ret = ["selecthxml", "SelectDom", "applySelector"].drill(xml.pos).call([xml, selectorExprs.toArray()], xml.pos);
+		#end
+		
 		if (isSingular(selector))
 			ret = ret.field("shift").call();
 			
@@ -66,7 +72,19 @@ class SelectDom
 	@:allowConstraint static public inline function getXml<T:Xml>(result:TypedResult<T>):T
 		return untyped result.__x_m_l__
 	
-	static public function runtimeSelect(xml:Xml, selector:selecthxml.engine.Type.Selector)
+	static public function runtimeSelect<T>(xml:TypedXml<T>, selectionString:String)
+	{
+		#if flash8
+		var lexer = new selecthxml.engine.Lexer(new haxe.io.StringInput(selectionString));
+		#else
+		var lexer = new selecthxml.engine.RegexLexer(selectionString);
+		#end
+		var parser = new Parser(lexer);
+		var selector = parser.parse();	
+		return applySelector(xml, selector);
+	}
+	
+	static public function applySelector(xml:Xml, selector:selecthxml.engine.Type.Selector)
 	{
 		var xmlDom = new selecthxml.engine.XmlDom(xml);
 		if (isIdOnly(selector))

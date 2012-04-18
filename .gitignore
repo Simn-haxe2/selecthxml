@@ -5,3 +5,9 @@
 /bin/swf8.swf
 /bin/swf9.swf
 /bin/cpp
+/bin/cpp_runtime
+/bin/php_runtime
+/bin/js_runtime.js
+/bin/neko_runtime.n
+/bin/swf8_runtime.swf
+/bin/swf9_runtime.swf
