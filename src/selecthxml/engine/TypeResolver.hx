@@ -94,7 +94,7 @@ class TypeResolver
 		
 		var existencePseudoMatches = [];
 		for (field in fields)
-		{			
+		{
 			var pseudos = getPseudoMeta(field);
 			for (pseudo in pseudos)
 			{
@@ -148,7 +148,11 @@ class TypeResolver
 		var newFields = [];
 		for (field in fields)
 		{
-			var fieldCType = field.type.toComplex();
+			var fieldCType = switch(field.type.reduce())
+			{
+				case TFun(_): continue;
+				default: field.type.reduce().toComplex();
+			}
 			var getter = makeGetter(field).func();
 			var setter = makeSetter(field).func(["value".toArg(fieldCType)]);
 			newFields.push(makeField("get_" +field.name , FFun(getter), field.pos, [APrivate]));
@@ -199,8 +203,8 @@ class TypeResolver
 				switch(t.toString())
 				{
 					case "Bool":
-						value = value.binOp("true".resolve(), OpEq, field.pos)
-						.binOp(value.binOp("1".resolve(), OpEq, field.pos), OpOr, field.pos);
+						value = value.binOp("true".toExpr(), OpEq, field.pos)
+						.binOp(value.binOp("1".toExpr(), OpEq, field.pos), OpBoolOr, field.pos);
 				}
 			default:
 		}
