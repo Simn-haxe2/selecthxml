@@ -1,6 +1,6 @@
 package selecthxml;
 
-class TypedResult<T> implements Dynamic
+class TypedResult<T:Xml> implements Dynamic
 {
 	var __x_m_l__:Xml;
 	

@@ -13,6 +13,7 @@ typedef CustomHtml =
 	var form: { action:String, method: String };
 	var body: { version: Int };
 	var head: { offset: Float };
+	@pseudo('input', 'type') var inputGeneral: { value: String };
 	@pseudo('input', 'type', 'submit') var inputSubmit: { value: String };
 	@pseudo('input', 'type', 'hidden') var inputHidden: { name:String, value: String };
 	@value('class') var cl: { id: String };
@@ -41,14 +42,14 @@ class TestTyped extends TestCase
 		assertEquals("POST", s.method);
 		assertTrue(Std.is(s.getXml(), Xml));
 	}
-	
+
 	public function testIntValue()
 	{
 		var s = xml.select("body");
 		assertTrue(Std.is(s[0].version, Int));
 		assertEquals(5, s[0].version);
 	}
-	
+
 	public function testFloatValue()
 	{
 		var s = xml.select("head");
@@ -71,7 +72,7 @@ class TestTyped extends TestCase
 		assertEquals("OK", s[0].value);
 		assertEquals("button", s[0].getXml().get('class'));
 	}
-	
+
 	public function testModify()
 	{
 		var s = xml.select("body");
@@ -85,13 +86,13 @@ class TestTyped extends TestCase
 		assertEquals(20, s[0].version);
 		assertEquals("20", s[0].getXml().get('version'));		
 	}
-	
+
 	public function testXmlFallback()
 	{
 		var s = xml.select("span");
 		assertTrue(Std.is(s[0], Xml));
 	}
-	
+
 	public function testRetainTypedXml()
 	{
 		var s = xml.select("body")[0];
@@ -112,7 +113,7 @@ class TestTyped extends TestCase
 		assertTrue(Type.resolveClass("selecthxml.types.customHtml.InputSubmit") != null);
 		assertTrue(Type.resolveClass("selecthxml.types.customHtml.InputHidden") == null); // this was never created
 	}
-	
+
 	public function testTypeCreation()
 	{
 		var t = new selecthxml.types.customHtml.A(Xml.parse("<a href='here' />").firstElement());

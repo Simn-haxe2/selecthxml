@@ -120,6 +120,12 @@ enum ParseError {
 	EAlreadyUniversal(t:Token);
 }
 
+typedef Pseudo = {
+	var elementName:String;
+	var attributeName:String;
+	@optional var match:String; 
+}
+
 typedef SelectableDom =
 {
 	var className:String;

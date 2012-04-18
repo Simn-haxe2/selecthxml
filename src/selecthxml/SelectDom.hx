@@ -1,74 +1,90 @@
 package selecthxml;
 
-import selecthxml.engine.Parser;
-import selecthxml.engine.Type;
-import selecthxml.engine.XmlDom;
-import selecthxml.TypedXml;
-
 #if macro
 
-import selecthxml.engine.MacroHelper;
 import haxe.macro.Context;
 import haxe.macro.Expr;
 
-#else
+import selecthxml.engine.Lexer;
+import selecthxml.engine.Parser;
+import selecthxml.engine.TypeResolver;
 
-import selecthxml.engine.RegexLexer;
-import selecthxml.engine.SelectEngine;
+import tink.core.types.Option;
+using tink.macro.tools.MacroTools;
 
 #end
 
-class SelectDom
+class SelectDom 
 {
-	#if !macro @:macro #end
-	static public function select<T>(xml:ExprRequire<TypedXml<T>>, selectionString:String)
-	{		
+	@:macro static public function select<T>(xml:ExprOf<TypedXml<T>>, selectionString:String)
+	{
 		if (selectionString == null || selectionString.length == 0)
 			return Context.error("Selection string expected.", xml.pos);
-						
-		return MacroHelper.makeFunction(xml, selectionString);
+		
+		var lexer = new Lexer(new haxe.io.StringInput(selectionString));
+		var parser = new Parser(lexer);
+		var selector = parser.parse();
+		
+		var selectorExprs = [];
+		for (s in selector)
+			selectorExprs.push(s.toExpr());
+			
+		var ret = ["selecthxml", "SelectDom", "runtimeSelect"].drill(xml.pos).call([xml, selectorExprs.toArray()], xml.pos);
+		if (isSingular(selector))
+			ret = ret.field("shift").call();
+			
+		var ret = switch(TypeResolver.resolve(xml, selector))
+		{
+			case Option.None:
+				ret;
+			case Option.Some(f):
+				if (isSingular(selector))
+					EFunction(null, f.instantiate([ret]).func([], TPath(f))).at(xml.pos).call([]);
+				else
+				{
+					var funcExpr = [
+						"xmls".define(ret),
+						"ret".define([].toExpr()),
+						"xmls".resolve().iterate(
+							"ret".resolve().field("push").call([f.instantiate(["xml".resolve()])])
+						, "xml"),
+						"ret".resolve()
+					].toBlock();
+					EFunction(null, funcExpr.func([], "Array".asComplexType([TPType(TPath(f))]))).at(xml.pos).call([]);
+				}
+		}
+		return ret;
 	}
+		
+	#if macro
 	
+	static inline function isSingular(s:selecthxml.engine.Type.Selector):Bool
+		return s[s.length - 1].id != null
+	
+	#else
+
 	@:allowConstraint static public inline function getXml<T:Xml>(result:TypedResult<T>):T
 		return untyped result.__x_m_l__
-		
-	#if !macro
 	
-	static var lastXmlDom:XmlDom;
-	static var selectorCache = new Hash<Selector>();
-	
-	static public function runtimeSelect(xml:Xml, selector:String)
+	static public function runtimeSelect(xml:Xml, selector:selecthxml.engine.Type.Selector)
 	{
-		if (lastXmlDom == null || lastXmlDom.xml != xml)
-			lastXmlDom = new XmlDom(xml);
-
-		var xmlDom = lastXmlDom;
-		
-		if (!selectorCache.exists(selector))
+		var xmlDom = new selecthxml.engine.XmlDom(xml);
+		if (isIdOnly(selector))
 		{
-			var lexer = new RegexLexer(selector);
-			var parser = new Parser(lexer);
-			selectorCache.set(selector, parser.parse());
-		}
-		
-		var s = selectorCache.get(selector);
-
-		if (isIdOnly(s))
-		{
-			var dom = xmlDom.getElementById(s[0].id);
+			var dom = xmlDom.getElementById(selector[0].id);
 			if (dom == null) return [];
 			return [dom.xml];
 		}
-		
-		var engine = new SelectEngine();
-		var result = engine.query(s, xmlDom);
+
+		var engine = new selecthxml.engine.SelectEngine();
+		var result = engine.query(selector, xmlDom);
 		var ret = [];
 		for (r in result)
-			ret.push(cast(r, XmlDom).xml);
+			ret.push(cast(r, selecthxml.engine.XmlDom).xml);
 		return ret;
 	}
 
-	static inline function isIdOnly(s:Selector):Bool
+	static inline function isIdOnly(s:selecthxml.engine.Type.Selector):Bool
 	{
 		var p = s[0];		
 		return s.length == 1 
@@ -78,7 +94,7 @@ class SelectDom
 			&& p.attrs.length == 0
 			&& p.pseudos.length == 0
 			&& p.combinator == null;
-	}
-	
+	}	
+
 	#end
 }
