@@ -86,20 +86,12 @@ class SelectDom
 	
 	static public function applySelector(xml:Xml, selector:selecthxml.engine.Type.Selector)
 	{
-		var xmlDom = new selecthxml.engine.XmlDom(xml);
 		if (isIdOnly(selector))
-		{
-			var dom = xmlDom.getElementById(selector[0].id);
-			if (dom == null) return [];
-			return [dom.xml];
-		}
+			return [ selecthxml.engine.XmlExtension.getElementById(xml, selector[0].id) ];
 
 		var engine = new selecthxml.engine.SelectEngine();
-		var result = engine.query(selector, xmlDom);
-		var ret = [];
-		for (r in result)
-			ret.push(cast(r, selecthxml.engine.XmlDom).xml);
-		return ret;
+		var result = engine.query(selector, xml);
+		return result;
 	}
 
 	static inline function isIdOnly(s:selecthxml.engine.Type.Selector):Bool

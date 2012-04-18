@@ -125,19 +125,3 @@ typedef Pseudo = {
 	var attributeName:String;
 	@optional var match:String; 
 }
-
-typedef SelectableDom =
-{
-	var className:String;
-	var nodeName:String;
-	var nodeType:Int;
-	
-	var firstChild:SelectableDom;
-	var parentNode:SelectableDom;
-	var nextSibling:SelectableDom;
-	var previousSibling:SelectableDom;
-	
-	function getAttribute(id:String):String;
-	function getElementsByClassName(name:String):Array<Dynamic>;
-	function getElementsByTagName(name:String):Array<Dynamic>;
-}

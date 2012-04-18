@@ -1,12 +1,13 @@
 package selecthxml.engine;
 import selecthxml.engine.Type;
+using selecthxml.engine.XmlExtension;
 
 class SelectEngine {
 	static inline var ELEMENT_NODE = 1;
 	
 	public function new() {}
 	
-	public function query(selector:Selector, root:SelectableDom):Array<SelectableDom> {
+	public function query(selector:Selector, root:Xml):Array<Xml> {
 
 		var candidates = getCandidates(selector, root);		
 		// TODO: Make this readable
@@ -21,8 +22,8 @@ class SelectEngine {
 					case Descendant: 
 						var found = false;
 						while (true) {
-							ctx = ctx.parentNode;
-							if (ctx == null || ctx.nodeType != ELEMENT_NODE) {
+							ctx = ctx.parent;
+							if (ctx == null || ctx.nodeType != Xml.Element) {
 								// Reached top of DOM tree
 								failed = true;
 								break;
@@ -31,8 +32,8 @@ class SelectEngine {
 								break;
 						}
 					case Child:
-						ctx = ctx.parentNode;
-						if (ctx == null || ctx.nodeType != ELEMENT_NODE || !matches(part, ctx))
+						ctx = ctx.parent;
+						if (ctx == null || ctx.nodeType != Xml.Element || !matches(part, ctx))
 							failed = true;
 					case AdjacentSibling:						
 						ctx = previousSiblingElement(ctx);
@@ -60,55 +61,57 @@ class SelectEngine {
 		return results;
 	}
 	
-	function getCandidates(selector:Selector, root:SelectableDom):Array<SelectableDom> {
+	function getCandidates(selector:Selector, root:Xml):Array<Xml> {
 		var p = selector[selector.length-1];
 		var candidates = [];
 		// Look for candidates using the most efficent methods available
 		if (p.id != null) {
-			var el = untyped root.getElementById(p.id);
+			var el = root.getElementById(p.id);
 			if (el != null && matches(p, el))
 				candidates.push(el);
 		}
-		else if (p.classes.length > 0 && untyped root.getElementsByClassName != null) {
+		else if (p.classes.length > 0) {
 			var names = p.classes.join(" ");
-			var list:Array<SelectableDom> = untyped root.getElementsByClassName(names);
-			for (i in 0 ... list.length)
-				if(matches(p, list[i]))
-					candidates.push(list[i]);
+			var list = root.getElementsByClassName(names);
+			for (i in list)
+				if (matches(p, i))
+					candidates.push(i);
 		}
 		else if (p.tag != null) {
 			var list = root.getElementsByTagName(p.tag);
-			for (i in 0 ... list.length)
-				if(matches(p, list[i]))
-					candidates.push(list[i]);
+			for (i in list)
+				if (matches(p, i))
+					candidates.push(i);
 		}
 		else {
 			var list = root.getElementsByTagName("*");
-			for (i in 0 ... list.length)
-				if(matches(p, list[i]))
-					candidates.push(list[i]);
+			for (i in list)
+				if (matches(p, i))
+					candidates.push(i);
 		}
 		return candidates;
 	}
 
-	function matches(part:SelectorPart, el:SelectableDom):Bool {
+	function matches(part:SelectorPart, el:Xml):Bool {
 		if (part.id != null) {
-			if (el.getAttribute("id") != part.id) 
+			if (el.get("id") != part.id) 
 				return false;
 		}		
 		if (part.tag != null) {
-			if (el.nodeName.toLowerCase() != part.tag.toLowerCase())
+			if (el.getUpperCaseNodeName().toLowerCase() != part.tag.toLowerCase())
 				return false;
 		}		
 		if (part.classes.length > 0) {
-			var c = el.className.split(" ");
+			var c = el.get("class");
+			if (c == null) return false;
+			var c = c.split(" ");
 			for(className in part.classes) 
 				if(!Lambda.has(c, className))
 					return false;
 		}
 		if (part.attrs.length > 0) {
 			for (attr in part.attrs) {
-				var value = el.getAttribute(attr.name);
+				var value = el.get(attr.name);
 				if (value == null)
 					return false;
 				switch(attr.operator) {
@@ -143,11 +146,11 @@ class SelectEngine {
 						if (!hasParent(el))
 							return false;
 						var count = 1;
-						var n = el.previousSibling;
+						var n = el.getPreviousSibling();
 						while (n != null) {
-							if (n.nodeType == ELEMENT_NODE)
+							if (n.nodeType == Xml.Element)
 								count++;
-							n = n.previousSibling;
+							n = n.getPreviousSibling();
 						}
 						if (!matchNth(count, a, b))
 							return false;
@@ -156,12 +159,12 @@ class SelectEngine {
 						if (!hasParent(el))
 							return false;
 						var count = 1;
-						var n = el.previousSibling;
-						var tag = part.tag == null ? el.nodeName :  part.tag;
+						var n = el.getPreviousSibling();
+						var tag = part.tag == null ? el.getUpperCaseNodeName() :  part.tag;
 						while (n != null) {
-							if (n.nodeType == ELEMENT_NODE && n.nodeName == tag.toUpperCase())
+							if (n.nodeType == Xml.Element && n.getUpperCaseNodeName() == tag.toUpperCase())
 								count++;
-							n = n.previousSibling;
+							n = n.getPreviousSibling();
 						}
 						if (!matchNth(count, a, b))
 							return false;
@@ -170,23 +173,23 @@ class SelectEngine {
 						if (!hasParent(el))
 							return false;
 						var count = 1;
-						var n = el.nextSibling;
+						var n = el.getNextSibling();
 						while (n != null) {
-							if (n.nodeType == ELEMENT_NODE)
+							if (n.nodeType == Xml.Element)
 								count++;
-							n = n.nextSibling;
+							n = n.getNextSibling();
 						}
 						if (!matchNth(count, a, b))
 							return false;
 							
 					case PsNthLastOfType(a, b):
 						var count = 1;
-						var n = el.nextSibling;
-						var tag = part.tag == null ? el.nodeName :  part.tag;
+						var n = el.getNextSibling();
+						var tag = part.tag == null ? el.getUpperCaseNodeName() :  part.tag;
 						while (n != null) {
-							if (n.nodeType == ELEMENT_NODE && n.nodeName == tag.toUpperCase())
+							if (n.nodeType == Xml.Element && n.getUpperCaseNodeName() == tag.toUpperCase())
 								count++;
-							n = n.nextSibling;
+							n = n.getNextSibling();
 						}
 						if (!matchNth(count, a, b))
 							return false;
@@ -201,37 +204,19 @@ class SelectEngine {
 						if (!hasParent(el) || !isFirst(el) || !isLast(el)) 
 							return false;
 					case PsFirstOfType:
-						var tag = part.tag == null ? el.nodeName :  part.tag;
+						var tag = part.tag == null ? el.getUpperCaseNodeName() :  part.tag;
 						if (!isFirst(el, tag)) 
 							return false;
 					case PsLastOfType:
-						var tag = part.tag == null ? el.nodeName :  part.tag;
+						var tag = part.tag == null ? el.getUpperCaseNodeName() :  part.tag;
 						if (!isLast(el, tag))
 							return false;
 					case PsOnlyOfType:
-						var tag = part.tag == null ? el.nodeName :  part.tag;
+						var tag = part.tag == null ? el.getUpperCaseNodeName() :  part.tag;
 						if (!isFirst(el, tag) || isLast(el, tag)) 
 							return false;
 					case PsEmpty:
 						if (el.firstChild != null)
-							return false;
-					//case PsFocus:
-						//if (el != untyped elem.ownerDocument.activeElement)
-							//return false;						
-					//case PsEnabled:
-						//var input:js.Dom.FormElement = cast el;						
-						// Isn't a match if disabled, a hidden form input, or not applicable
-						//if (input.type == null || input.type == "hidden")
-							//return false;
-						//if (input.disabled == null || input.disabled == true)
-							//return false;							
-					//case PsDisabled:
-						//var input:js.Dom.FormElement = cast el;
-						// Isn't a match if enabled or not applicable
-						//if (input.disabled == null || input.disabled == false)
-							//return false;
-					case PsChecked:
-						if (untyped el.checked == null || untyped el.checked == false)
 							return false;
 					case PsNot(s):
 						if (matches(s, el))
@@ -244,36 +229,36 @@ class SelectEngine {
 		return true;
 	}
 	
-	function previousSiblingElement(e:SelectableDom):SelectableDom {
+	function previousSiblingElement(e:Xml):Xml {
 		while (true) {
-			e = e.previousSibling;
-			if (e == null || e.nodeType == ELEMENT_NODE)
+			e = e.getPreviousSibling();
+			if (e == null || e.nodeType == Xml.Element)
 				break;
 		}
 		return e;
 	}
 	
-	inline function hasParent(el:SelectableDom):Bool {
-		return el.parentNode != null;
+	inline function hasParent(el:Xml):Bool {
+		return el.parent != null;
 	}
 	
-	function isFirst(el:SelectableDom, ?type:String):Bool {
+	function isFirst(el:Xml, ?type:String):Bool {
 		while (true) {
-			el = el.previousSibling;
+			el = el.getPreviousSibling();
 			if (el == null)
 				break;
-			if (el.nodeType == ELEMENT_NODE && (type == null || el.nodeName == type.toUpperCase()))
+			if (el.nodeType == Xml.Element && (type == null || el.getUpperCaseNodeName() == type.toUpperCase()))
 				return false;			
 		}		
 		return true;
 	}
 	
-	function isLast(el:SelectableDom, ?type:String):Bool {
+	function isLast(el:Xml, ?type:String):Bool {
 		while (true) {
-			el = el.nextSibling;
+			el = el.getNextSibling();
 			if (el == null)
 				break;
-			if (el.nodeType == ELEMENT_NODE && (type == null || el.nodeName == type.toUpperCase()))
+			if (el.nodeType == Xml.Element && (type == null || el.getUpperCaseNodeName() == type.toUpperCase()))
 				return false;
 		}		
 		return true;
