@@ -17,6 +17,10 @@ typedef CustomHtml =
 	@pseudo('input', 'type', 'submit') var inputSubmit: { value: String };
 	@pseudo('input', 'type', 'hidden') var inputHidden: { name:String, value: String };
 	@value('class') var cl: { id: String };
+	var el: {
+		@process($value.split(":"), $value.join(":")) var list:Array<String>;
+		@process(Lambda.array(Lambda.map($value.split(","), function(s) return Std.parseInt(s))), $value.join(",")) var intList:Array<Int>;
+	};
 }
 
 class TestTyped extends TestCase
@@ -118,5 +122,30 @@ class TestTyped extends TestCase
 	{
 		var t = new selecthxml.types.customHtml.A(Xml.parse("<a href='here' />").firstElement());
 		assertEquals('here', t.href);
+	}
+	
+	public function testProcessMeta()
+	{
+		var xml:TypedXml<CustomHtml> = Xml.parse("<el list='item1:item2:item3'></el>").firstChild();
+		var el = xml.select("el")[0];
+		assertEquals(3, el.list.length);
+		assertEquals("item1", el.list[0]);
+		assertEquals("item2", el.list[1]);
+		assertEquals("item3", el.list[2]);
+		el.list = ["newitem1", "newitem2"];
+		assertEquals(2, el.list.length);
+		assertEquals("newitem1", el.list[0]);
+		assertEquals("newitem2", el.list[1]);
+		
+		var xml:TypedXml<CustomHtml> = Xml.parse("<el intList='9, 5, 1'></el>").firstChild();
+		var el = xml.select("el")[0];
+		assertEquals(3, el.intList.length);
+		assertEquals(9, el.intList[0]);
+		assertEquals(5, el.intList[1]);
+		assertEquals(1, el.intList[2]);
+		el.intList = [99, 98];
+		assertEquals(2, el.intList.length);
+		assertEquals(99, el.intList[0]);
+		assertEquals(98, el.intList[1]);		
 	}
 }
