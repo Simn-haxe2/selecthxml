@@ -12,7 +12,11 @@ class XmlExtension
 		for (sibling in xml.parent.elements())
 		{
 			if (found) return sibling;
-			if (sibling.toString() == xml.toString())
+			#if flash
+			if (untyped sibling._node == xml._node)
+			#else
+			if (sibling == xml)
+			#end
 				found = true;
 		}
 		return null;		
@@ -24,7 +28,12 @@ class XmlExtension
 		var lastSibling = null;
 		for (sibling in xml.parent.elements())
 		{
-			if (sibling.toString() == xml.toString()) return lastSibling;
+			#if flash
+			if (untyped sibling._node == xml._node)
+			#else
+			if (sibling == xml)
+			#end
+				return lastSibling;
 			lastSibling = sibling;
 		}
 		return null;			
