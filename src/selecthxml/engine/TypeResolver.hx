@@ -18,7 +18,7 @@ class TypeResolver
 {
 	static var typeCache:Hash<TypePath> = new Hash();
 	
-	static public function resolve<T>(xml:ExprOf<TypedXml<T>>, selector:Selector)
+	static public function resolve<T>(xml:ExprOf<TypedXml<T>>, selector:Selector):Option<TypePath>
 	{
 		var docType = switch(getDocumentType(xml))
 		{

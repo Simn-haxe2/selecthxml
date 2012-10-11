@@ -1,6 +1,5 @@
 package ;
 import haxe.unit.TestRunner;
-import tink.devtools.Benchmark;
 
 class TestMain 
 {
@@ -10,7 +9,7 @@ class TestMain
 		var runner = new TestRunner();
 		runner.add(new TestBasic());
 		runner.add(new TestTyped());
-		Benchmark.measure("Running", runner.run());
+		runner.run();
 		#end
 	}
 }

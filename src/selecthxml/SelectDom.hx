@@ -69,7 +69,7 @@ class SelectDom
 	
 	#else
 
-	@:allowConstraint static public inline function getXml<T:Xml>(result:TypedResult<T>):T
+	static public function getXml<T:Xml>(result:TypedResult<T>):T
 		return untyped result.__x_m_l__
 	
 	static public function runtimeSelect<T>(xml:TypedXml<T>, selectionString:String)
